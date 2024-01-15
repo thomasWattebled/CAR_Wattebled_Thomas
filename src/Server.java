@@ -38,10 +38,21 @@ public class Server {
 			if (maplogin.get(login).equals(pass)) {
 				str = "230 User log in\r\n" ;
 				out.write(str.getBytes());
+				res = scanner.nextLine();
+			}
+			else {
+				str = "430 Identifiant ou mot de passe incorrect\r\n" ;
+				out.write(str.getBytes());
 			}
 		}
-		while(true) {
-			int chiffre = 1;
+		else {
+			str = "430 Identifiant ou mot de passe incorrect\r\n" ;
+			out.write(str.getBytes());
+		}
+		//res = scanner.nextLine();
+		while(!res.equals("quit")) {
+			res = scanner.nextLine();
+			
 		}
 	}
 }
