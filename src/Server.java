@@ -1,11 +1,18 @@
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Scanner;
 
+
+// /git/CAR_Wattebled_Thomas/ressource/dog.png
+// /Documents
 public class Server {
 	
 	private HashMap<String, String> maplogin = new HashMap<String,String>();
@@ -69,7 +76,7 @@ public class Server {
 			str = "230 User log in\r\n" ;
 			out.write(str.getBytes());
 			//String res = scanner.nextLine();	
-			this.commandeFTP(str);
+			this.commandeFTP();
 		}
 		else {
 			str = "430 Identifiant ou mot de passe incorrect\r\n" ;
@@ -77,35 +84,87 @@ public class Server {
 		}
 	}
 	
-	private void commandeFTP(String str) throws IOException {
+	private void commandeFTP() throws IOException {
+		File file;
+		Path p = null;
+		FileOutputStream filep = null;
 		String res = scanner.nextLine();
 		OutputStream out = this.getSocket().getOutputStream();
-		//String str = "";
+		String str = "230 utilisateur connecte\r\n";
 		while(true) {
 			if (res.equals("SYST")) {
 				System.out.println("client connecte");
 				out.write(str.getBytes());
-				res = scanner.nextLine();
 			}
 			else if (res.equals("QUIT")) {
 				System.out.println("client deconnecte");
-				out = this.getSocket().getOutputStream();
 				str = "221 deconnexion\r\n" ;
 				out.write(str.getBytes());
 				break;
 			}
+			else if(res.equals("PASS")) {
+				System.out.println(res);
+				out.write(str.getBytes());
+			}
+			else if(res.equals("TYPE I")) {
+				System.out.println("passage bin");
+				str = "200 Type accepted\r\n";
+				out.write(str.getBytes());
+			}
+			else if(res.equals("TYPE A")) {
+				System.out.println("passage ascii");
+				str = "200 type accepted\r\n";
+				out.write(str.getBytes());
+			}
+			else if(res.substring(0,4).equals("EPSV")) {
+				System.out.println(res);
+				str = "229 Entering Extended Passive Mode\r\n";
+				out.write(str.getBytes());
+			}
+			else if(res.substring(0,4).equals("PASV")) {
+				System.out.println(res);
+				str = "227 Entering Passive Mode\r\n";
+				out.write(str.getBytes());
+			}
+			else if(res.substring(0,4).equals("PORT")) {
+				System.out.println(res);
+				str = "227 yes\r\n";
+				out.write(str.getBytes());
+			}
+			else if(res.substring(0,4).equals("SIZE")) {
+				p= Path.of("./ressource/"+res.substring(5));
+				filep= new FileOutputStream("./ressource/"+ res.substring(5));
+				file = new File("./ressource/"+ res.substring(5));
+				System.out.println(file.isFile());
+				System.out.println(res);
+				str = "213 File status\r\n";
+				out.write(str.getBytes());
+			}
+			else if(res.substring(0,4).equals("EPRT")) {
+				System.out.println(res);
+				str = "200 EPRT command ok\r\n";
+				out.write(str.getBytes());
+			}
+			else if(res.substring(0,4).equals("RETR")) {
+				System.out.println(res);
+				str = "150 Accepted data connection\r\n";
+				out.write(str.getBytes());
+				Files.copy(p, filep);
+				res = scanner.nextLine();
+				System.out.println("fichier copié");
+				str += "226 File successfully transfered\r\n";
+				out.write(str.getBytes());
+			}
 			else {
 				System.out.println(res);
-				out = this.getSocket().getOutputStream();
 				str = "500 commande non reconnu\r\n" ;
 				out.write(str.getBytes());
-				res = scanner.nextLine();
-				//break ;
+			}	
+			res = scanner.nextLine();
 			}
-		}
 	}
 	public static void main(String [] args) throws IOException {
-		Server server = new Server(2122);
+		Server server = new Server(2121);
 		server.acceptSocket();
 		Socket s = server.getSocket();
 		InputStream in = s.getInputStream() ;
