@@ -1,4 +1,5 @@
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -85,11 +86,13 @@ public class Server {
 	}
 	
 	private void commandeFTP() throws IOException {
-		File file;
-		Path p = null;
+		File file= null;
+		//Path p = null;
 		FileOutputStream filep = null;
+		ServerSocket ss2 = new ServerSocket(0);
 		String res = scanner.nextLine();
 		OutputStream out = this.getSocket().getOutputStream();
+		FileInputStream fileIn = null; 
 		String str = "230 utilisateur connecte\r\n";
 		while(true) {
 			if (res.equals("SYST")) {
@@ -118,7 +121,7 @@ public class Server {
 			}
 			else if(res.substring(0,4).equals("EPSV")) {
 				System.out.println(res);
-				str = "229 Entering Extended Passive Mode\r\n";
+				str = "229 Entering Extended Passive Mode (|||"+ ss2.getLocalPort()+ "|) \r\n";
 				out.write(str.getBytes());
 			}
 			else if(res.substring(0,4).equals("PASV")) {
@@ -132,7 +135,6 @@ public class Server {
 				out.write(str.getBytes());
 			}
 			else if(res.substring(0,4).equals("SIZE")) {
-				p= Path.of("./ressource/"+res.substring(5));
 				filep= new FileOutputStream("./ressource/"+ res.substring(5));
 				file = new File("./ressource/"+ res.substring(5));
 				System.out.println(file.isFile());
@@ -146,15 +148,18 @@ public class Server {
 				out.write(str.getBytes());
 			}
 			else if(res.substring(0,4).equals("RETR")) {
+				Socket dataSocket = new Socket();
+				dataSocket = ss2.accept();
+				//OutputStream dataSocketout = dataSocket.getOutputStream();
 				System.out.println(res);
 				str = "150 Accepted data connection\r\n";
 				out.write(str.getBytes());
-				Files.copy(p, filep);
-				res = scanner.nextLine();
+				fileIn= new FileInputStream(file);
+				dataSocket.getOutputStream().write(fileIn.readAllBytes());	
 				System.out.println("fichier copié");
-				str += "226 File successfully transfered\r\n";
+				str = "226 File successfully transfered\r\n";
 				out.write(str.getBytes());
-			}
+				dataSocket.close();			}
 			else {
 				System.out.println(res);
 				str = "500 commande non reconnu\r\n" ;
