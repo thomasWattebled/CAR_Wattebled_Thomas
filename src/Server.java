@@ -86,13 +86,11 @@ public class Server {
 	}
 	
 	private void commandeFTP() throws IOException {
-		File file= null;
+		//File file= null;
 		//Path p = null;
-		FileOutputStream filep = null;
 		ServerSocket ss2 = new ServerSocket(0);
 		String res = scanner.nextLine();
 		OutputStream out = this.getSocket().getOutputStream();
-		FileInputStream fileIn = null; 
 		String str = "230 utilisateur connecte\r\n";
 		while(true) {
 			if (res.equals("SYST")) {
@@ -135,10 +133,9 @@ public class Server {
 				out.write(str.getBytes());
 			}
 			else if(res.substring(0,4).equals("SIZE")) {
-				filep= new FileOutputStream("./ressource/"+ res.substring(5));
-				file = new File("./ressource/"+ res.substring(5));
-				System.out.println(file.isFile());
-				System.out.println(res);
+				//filep= new FileOutputStream("./ressource/"+ res.substring(5));
+				//System.out.println("fichier exist ?" +  file.exists()+ "\n le fichier se nomme: "+ res.substring(5));
+				//System.out.println(res);
 				str = "213 File status\r\n";
 				out.write(str.getBytes());
 			}
@@ -148,18 +145,23 @@ public class Server {
 				out.write(str.getBytes());
 			}
 			else if(res.substring(0,4).equals("RETR")) {
-				Socket dataSocket = new Socket();
-				dataSocket = ss2.accept();
-				//OutputStream dataSocketout = dataSocket.getOutputStream();
+				Socket dataSocket = ss2.accept();
+				File file =  new File ("./ressource/" + res.substring(5));
+				FileInputStream fileInput = new FileInputStream(file);
+				String response ="";
 				System.out.println(res);
 				str = "150 Accepted data connection\r\n";
-				out.write(str.getBytes());
-				fileIn= new FileInputStream(file);
-				dataSocket.getOutputStream().write(fileIn.readAllBytes());	
+				out.write(str.getBytes());	
+				int octet;
+				while((octet= fileInput.read())!=-1) {
+					String reponse = octet + "\r\n";
+					dataSocket.getOutputStream().write(reponse.getBytes());
+				}
+				dataSocket.close();
+				fileInput.close();
 				System.out.println("fichier copié");
 				str = "226 File successfully transfered\r\n";
-				out.write(str.getBytes());
-				dataSocket.close();			}
+				out.write(str.getBytes());		}
 			else {
 				System.out.println(res);
 				str = "500 commande non reconnu\r\n" ;
@@ -168,6 +170,7 @@ public class Server {
 			res = scanner.nextLine();
 			}
 	}
+	
 	public static void main(String [] args) throws IOException {
 		Server server = new Server(2121);
 		server.acceptSocket();
