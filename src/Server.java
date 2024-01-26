@@ -92,6 +92,7 @@ public class Server {
 		String res = scanner.nextLine();
 		OutputStream out = this.getSocket().getOutputStream();
 		String str = "230 utilisateur connecte\r\n";
+		String path ="./"; 
 		while(true) {
 			if (res.equals("SYST")) {
 				System.out.println("client connecte");
@@ -162,6 +163,69 @@ public class Server {
 				System.out.println("fichier copié");
 				str = "226 File successfully transfered\r\n";
 				out.write(str.getBytes());		}
+			else if(res.substring(0,4).equals("LIST"))  {
+				File repertoire ;
+				File fichier;
+				Socket dataSocket = ss2.accept();
+				System.out.println(res);
+				str = "150 Accepted data connection\r\n";
+				out.write(str.getBytes());
+				if (res.length()<5) {
+					repertoire = new File(path +"/");
+				}else {
+					repertoire = new File(path +"/"+res.substring(5)); 
+				 }
+				 //System.out.println(repertoire); System.out.println(repertoire.list());
+				 String liste[] = repertoire.list();
+				 String response = "";
+				 if (liste!=null) {
+					 for (int i = 0; i < liste.length; i++) {
+						 System.out.println(liste[i]);
+					 }
+					 for (int i = 0; i < liste.length; i++) {
+						 if (res.length()<5) {
+							 fichier = new File("./"+liste[i]);
+							}else {
+								fichier = new File(res.substring(5)+"/"+liste[i]); 
+							 }
+						 String droits = fichier.canRead() ? " dr" : "d-";
+					     droits += fichier.canWrite() ? "w" : "-";
+					     droits += fichier.canExecute() ? "x" : "-";
+					     response += droits+" "+liste[i]+"\n"; 
+					 }
+					 response = response + "\r\n";
+					 dataSocket.getOutputStream().write(response.getBytes());
+					 dataSocket.close();
+					 str = "212 File successfully transfered\r\n";
+					out.write(str.getBytes());	
+				 }
+			}
+			else if(res.substring(0,3).equals("CWD")) {
+				System.out.println(res);
+				File file = new File(res.substring(4));
+				System.out.println(file.exists());
+				if(file.exists()) {
+					str="250 Requested file action okay, completed.\r\n";
+					path = path + res.substring(4)+"/";
+					System.out.println("mon path apres cd est de :" + path);
+				}
+				else {
+					str="500 Syntax error in parameters or argument.\r\n";
+				}
+				 out.write(str.getBytes());
+			 }
+			else if(res.substring(0,4).equals("XCWD")) {
+				System.out.println(res);
+				File file = new File(res.substring(4));
+				System.out.println(file.exists());
+				if(file.exists()) {
+					str="250 Requested file action okay, completed.\r\n";
+				}
+				else {
+					str="500 Path false\r\n";
+				}
+				 out.write(str.getBytes());
+			}	
 			else {
 				System.out.println(res);
 				str = "500 commande non reconnu\r\n" ;
