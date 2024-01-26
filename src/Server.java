@@ -85,24 +85,91 @@ public class Server {
 		}
 	}
 	
+	public void commandeSyst(String reponse,OutputStream out) throws IOException {
+		String str = "230 utilisateur connecte\r\n";
+		System.out.println("client connecte");
+		out.write(str.getBytes());
+	}
+	
+	public void commandeQuit(OutputStream out) throws IOException {
+		System.out.println("client deconnecte");
+		String str = "221 deconnexion\r\n" ;
+		out.write(str.getBytes());
+	}
+	
+	public void commandeEPSV(ServerSocket ss2,OutputStream out) throws IOException {
+		String str = "229 Entering Extended Passive Mode (|||"+ ss2.getLocalPort()+ "|) \r\n";
+		out.write(str.getBytes());
+	}
+	
+	public void commandePASV(OutputStream out) throws IOException {
+		String str = "227 Entering Passive Mode\r\n";
+		out.write(str.getBytes());
+	}
+	
+	public void commandeRETR(ServerSocket ss2,OutputStream out, String res) throws IOException {
+		Socket dataSocket = ss2.accept();
+		File file =  new File ("./ressource/" + res.substring(5));
+		FileInputStream fileInput = new FileInputStream(file);
+		String response ="";
+		System.out.println(res);
+		String str = "150 Accepted data connection\r\n";
+		out.write(str.getBytes());	
+		int octet;
+		while((octet= fileInput.read())!=-1) {
+			String reponse = octet + "\r\n";
+			dataSocket.getOutputStream().write(reponse.getBytes());
+		}
+		dataSocket.close();
+		fileInput.close();
+		System.out.println("fichier copié");
+		str = "226 File successfully transfered\r\n";
+		out.write(str.getBytes());		
+	}
+	
+	public String commandeList(ServerSocket ss2,OutputStream out,String path,String res) throws IOException {
+		File repertoire ;
+		File fichier;
+		Socket dataSocket = ss2.accept();
+		System.out.println(res);
+		String str = "150 Accepted data connection\r\n";
+		out.write(str.getBytes());
+		repertoire = res.length()<5 ? new File(path+"/") : new File(path +"/"+res.substring(5));
+		String liste[] = repertoire.list();
+		 String response = "";
+		 if (liste!=null) {
+			 for (int i = 0; i < liste.length; i++) {
+				 fichier = res.length()<5 ? new File("./"+liste[i]) :  new File(res.substring(5)+"/"+liste[i]); 
+				 String droits = fichier.canRead() ? " dr" : "d-";
+			     droits += fichier.canWrite() ? "w" : "-";
+			     droits += fichier.canExecute() ? "x" : "-";
+			     response += droits+" "+liste[i]+"\n"; 
+			 }
+			 response = response + "\r\n";
+			 dataSocket.getOutputStream().write(response.getBytes());
+			 dataSocket.close();
+			 str = "212 File successfully transfered\r\n";
+			out.write(str.getBytes());	
+		 }
+		 return path;
+	}
+	
+	
+	
 	private void commandeFTP() throws IOException {
-		//File file= null;
-		//Path p = null;
 		ServerSocket ss2 = new ServerSocket(0);
-		String res = scanner.nextLine();
 		OutputStream out = this.getSocket().getOutputStream();
 		String str = "230 utilisateur connecte\r\n";
 		String path ="./"; 
-		while(true) {
+		Boolean dialogue= true;
+		while(dialogue) {
+			String res = scanner.nextLine();
 			if (res.equals("SYST")) {
-				System.out.println("client connecte");
-				out.write(str.getBytes());
+				this.commandeSyst(str, out);
 			}
 			else if (res.equals("QUIT")) {
-				System.out.println("client deconnecte");
-				str = "221 deconnexion\r\n" ;
-				out.write(str.getBytes());
-				break;
+				this.commandeQuit(out);
+				dialogue = false;
 			}
 			else if(res.equals("PASS")) {
 				System.out.println(res);
@@ -120,23 +187,13 @@ public class Server {
 			}
 			else if(res.substring(0,4).equals("EPSV")) {
 				System.out.println(res);
-				str = "229 Entering Extended Passive Mode (|||"+ ss2.getLocalPort()+ "|) \r\n";
-				out.write(str.getBytes());
+				this.commandeEPSV(ss2,out);
 			}
 			else if(res.substring(0,4).equals("PASV")) {
 				System.out.println(res);
-				str = "227 Entering Passive Mode\r\n";
-				out.write(str.getBytes());
-			}
-			else if(res.substring(0,4).equals("PORT")) {
-				System.out.println(res);
-				str = "227 yes\r\n";
-				out.write(str.getBytes());
+				this.commandePASV(out);
 			}
 			else if(res.substring(0,4).equals("SIZE")) {
-				//filep= new FileOutputStream("./ressource/"+ res.substring(5));
-				//System.out.println("fichier exist ?" +  file.exists()+ "\n le fichier se nomme: "+ res.substring(5));
-				//System.out.println(res);
 				str = "213 File status\r\n";
 				out.write(str.getBytes());
 			}
@@ -146,60 +203,11 @@ public class Server {
 				out.write(str.getBytes());
 			}
 			else if(res.substring(0,4).equals("RETR")) {
-				Socket dataSocket = ss2.accept();
-				File file =  new File ("./ressource/" + res.substring(5));
-				FileInputStream fileInput = new FileInputStream(file);
-				String response ="";
-				System.out.println(res);
-				str = "150 Accepted data connection\r\n";
-				out.write(str.getBytes());	
-				int octet;
-				while((octet= fileInput.read())!=-1) {
-					String reponse = octet + "\r\n";
-					dataSocket.getOutputStream().write(reponse.getBytes());
+				this.commandeRETR(ss2, out, res);
 				}
-				dataSocket.close();
-				fileInput.close();
-				System.out.println("fichier copié");
-				str = "226 File successfully transfered\r\n";
-				out.write(str.getBytes());		}
 			else if(res.substring(0,4).equals("LIST"))  {
-				File repertoire ;
-				File fichier;
-				Socket dataSocket = ss2.accept();
-				System.out.println(res);
-				str = "150 Accepted data connection\r\n";
-				out.write(str.getBytes());
-				if (res.length()<5) {
-					repertoire = new File(path +"/");
-				}else {
-					repertoire = new File(path +"/"+res.substring(5)); 
+				this.commandeList(ss2, out, path, res);		
 				 }
-				 //System.out.println(repertoire); System.out.println(repertoire.list());
-				 String liste[] = repertoire.list();
-				 String response = "";
-				 if (liste!=null) {
-					 for (int i = 0; i < liste.length; i++) {
-						 System.out.println(liste[i]);
-					 }
-					 for (int i = 0; i < liste.length; i++) {
-						 if (res.length()<5) {
-							 fichier = new File("./"+liste[i]);
-							}else {
-								fichier = new File(res.substring(5)+"/"+liste[i]); 
-							 }
-						 String droits = fichier.canRead() ? " dr" : "d-";
-					     droits += fichier.canWrite() ? "w" : "-";
-					     droits += fichier.canExecute() ? "x" : "-";
-					     response += droits+" "+liste[i]+"\n"; 
-					 }
-					 response = response + "\r\n";
-					 dataSocket.getOutputStream().write(response.getBytes());
-					 dataSocket.close();
-					 str = "212 File successfully transfered\r\n";
-					out.write(str.getBytes());	
-				 }
-			}
 			else if(res.substring(0,3).equals("CWD")) {
 				System.out.println(res);
 				File file = new File(res.substring(4));
@@ -231,8 +239,8 @@ public class Server {
 				str = "500 commande non reconnu\r\n" ;
 				out.write(str.getBytes());
 			}	
-			res = scanner.nextLine();
-			}
+		}
+	this.getSocket().close();
 	}
 	
 	public static void main(String [] args) throws IOException {
