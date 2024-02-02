@@ -256,7 +256,8 @@ public class Server {
 			
 			else if(res.substring(0,4).equals("LINE")) {
 				//System.out.println(res.split(" ")[1]);
-				//Socket dataSocket = ss2.accept();
+				//Socket dataSocket = new Socket();
+				//dataSocket = ss2.accept();
 				System.out.println(res);
 				String fichier=res.split(" ")[1];
 				System.out.println(str);
