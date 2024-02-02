@@ -117,19 +117,12 @@ public class Server {
 		Socket dataSocket = ss2.accept();
 		File file =  new File ("./ressource/" + res.substring(5));
 		FileInputStream fileInput = new FileInputStream(file);
-		String response ="";
 		System.out.println(res);
 		String str = "150 Accepted data connection\r\n";
 		out.write(str.getBytes());	
-		BufferedInputStream br = new BufferedInputStream(fileInput); 
-		DataInputStream  in = new DataInputStream(br);
-		byte[] buffer = new byte[1024];
-		int lu;
-		while((lu= fileInput.read())!=-1) {
-			//String reponse = octet+"\r\n";
-			//System.out.println(octet);
-			dataSocket.getOutputStream().write(buffer,0,lu);
-			//dataSocket.getOutputStream().write(reponse.getBytes());
+		byte[] buffer = new byte[4096];
+		while((fileInput.read(buffer))!=-1) {
+			dataSocket.getOutputStream().write(buffer);
 		}
 		dataSocket.close();
 		fileInput.close();
