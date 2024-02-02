@@ -1,4 +1,6 @@
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -10,6 +12,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -118,10 +121,15 @@ public class Server {
 		System.out.println(res);
 		String str = "150 Accepted data connection\r\n";
 		out.write(str.getBytes());	
-		int octet;
-		while((octet= fileInput.read())!=-1) {
-			String reponse = octet + "\r\n";
-			dataSocket.getOutputStream().write(reponse.getBytes());
+		BufferedInputStream br = new BufferedInputStream(fileInput); 
+		DataInputStream  in = new DataInputStream(br);
+		byte[] buffer = new byte[1024];
+		int lu;
+		while((lu= fileInput.read())!=-1) {
+			//String reponse = octet+"\r\n";
+			//System.out.println(octet);
+			dataSocket.getOutputStream().write(buffer,0,lu);
+			//dataSocket.getOutputStream().write(reponse.getBytes());
 		}
 		dataSocket.close();
 		fileInput.close();
@@ -163,7 +171,9 @@ public class Server {
 		ServerSocket ss2 = new ServerSocket(0);
 		OutputStream out = this.getSocket().getOutputStream();
 		String str = "230 utilisateur connecte\r\n";
-		String path ="./"; 
+		String localpath ="./";
+		Path path =Paths.get(localpath); 
+		
 		Boolean dialogue= true;
 		while(dialogue) {
 			String res = scanner.nextLine();
@@ -209,7 +219,7 @@ public class Server {
 				this.commandeRETR(ss2, out, res);
 				}
 			else if(res.substring(0,4).equals("LIST"))  {
-				this.commandeList(ss2, out, path, res);		
+				this.commandeList(ss2, out, localpath, res);		
 				 }
 			else if(res.substring(0,3).equals("CWD")) {
 				System.out.println(res);
@@ -217,7 +227,14 @@ public class Server {
 				System.out.println(file.exists());
 				if(file.exists()) {
 					str="250 Requested file action okay, completed.\r\n";
-					path = path + res.substring(4)+"/";
+					localpath+=res.substring(4)+"/";
+					path =Paths.get(localpath);
+					path = path.normalize();
+					if (path.equals(Paths.get("../"))) {
+						path= Paths.get("./");
+						localpath="./";
+					}
+					System.out.println(path);
 					System.out.println("mon path apres cd est de :" + path);
 				}
 				else {
@@ -245,11 +262,14 @@ public class Server {
 			}
 			
 			else if(res.substring(0,4).equals("LINE")) {
+				//System.out.println(res.split(" ")[1]);
+				//Socket dataSocket = ss2.accept();
 				System.out.println(res);
-				String fichier=res.substring(5,str.indexOf(" ",4)-2);
+				String fichier=res.split(" ")[1];
 				System.out.println(str);
 				File file = new File("./ressource/" +fichier);
 				int ligne_to_read= Integer.valueOf(res.substring(4+fichier.length()+2));
+				System.out.println(ligne_to_read);
 				System.out.println(file.exists());
 				FileReader fr = new FileReader(file);
 				BufferedReader br = new BufferedReader(fr); 
@@ -262,6 +282,7 @@ public class Server {
 				String stockage = br.readLine();
 				stockage+="\r\n";
 				out.write(stockage.getBytes());
+				//dataSocket.close();
 			}
 			else {
 				System.out.println(res);
