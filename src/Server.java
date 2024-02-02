@@ -24,6 +24,7 @@ public class Server {
 	public Server(int port) throws IOException {
 		this.maplogin.put("thomas", "oui");
 		this.maplogin.put("valentin", "non");
+		this.maplogin.put("miage", "car");
 		
 		this.serverSocket = new ServerSocket(port);
 		System.out.println("lancement Server sur le port " + port +"\n");
@@ -234,10 +235,17 @@ public class Server {
 				}
 				 out.write(str.getBytes());
 			}	
+			else if(res.substring(0,4).equals("PING")) {
+				System.out.println(res);
+				str="200 Ping Command ok\r\n";
+				out.write(str.getBytes());
+				out.write("pong\r\n.".getBytes());
+			}
 			else {
 				System.out.println(res);
 				str = "500 commande non reconnu\r\n" ;
 				out.write(str.getBytes());
+				
 			}	
 		}
 	this.getSocket().close();
