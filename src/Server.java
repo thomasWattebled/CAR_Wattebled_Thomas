@@ -1,6 +1,8 @@
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -240,6 +242,26 @@ public class Server {
 				str="200 Ping Command ok\r\n";
 				out.write(str.getBytes());
 				out.write("pong\r\n.".getBytes());
+			}
+			
+			else if(res.substring(0,4).equals("LINE")) {
+				System.out.println(res);
+				String fichier=res.substring(5,str.indexOf(" ",4)-2);
+				System.out.println(str);
+				File file = new File("./ressource/" +fichier);
+				int ligne_to_read= Integer.valueOf(res.substring(4+fichier.length()+2));
+				System.out.println(file.exists());
+				FileReader fr = new FileReader(file);
+				BufferedReader br = new BufferedReader(fr); 
+				int numeroLigne = 0;
+				
+				while(numeroLigne<ligne_to_read-1) {
+					br.readLine();
+					numeroLigne ++;
+				};
+				String stockage = br.readLine();
+				stockage+="\r\n";
+				out.write(stockage.getBytes());
 			}
 			else {
 				System.out.println(res);
